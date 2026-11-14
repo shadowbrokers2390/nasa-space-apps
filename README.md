@@ -4,7 +4,8 @@ An interactive map of ground movement under roads, buildings, and rail lines, me
 NASA-ISRO NISAR radar satellite. Built for the 2026 NASA Space Apps Challenge, "Dancing with the
 SARs", during the event on November 14-15, 2026.
 
-**Live map:** [ADD YOUR GITHUB PAGES LINK HERE]
+**Live map:** https://shadowbrokers2390.github.io/nasa-space-apps/
+(Mexico City: https://shadowbrokers2390.github.io/nasa-space-apps/?site=mexico)
 
 ## Two places, two kinds of surface change
 

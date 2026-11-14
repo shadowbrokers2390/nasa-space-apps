@@ -139,8 +139,13 @@ $('pix').textContent = M.pixel_m;
 for (const line of M.engineer) $('engineer').appendChild(document.createElement('li')).textContent = line;
 
 const map = L.map('map').fitBounds(TS.bounds);
-// The map can measure itself before the page layout settles, which leaves it zoomed out and off-center.
-addEventListener('load', () => { map.invalidateSize(); map.fitBounds(TS.bounds); });
+// A page opened in a background tab has no size yet, which leaves the map zoomed out to the whole world.
+// Fit to the site once, the first time the map has a real size.
+let fitted = false;
+new ResizeObserver(() => {
+  map.invalidateSize();
+  if (!fitted && map.getSize().x) { fitted = true; map.fitBounds(TS.bounds); }
+}).observe($('map'));
 L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
   maxZoom: 19, attribution: 'Base map: Esri | Buildings and roads: &copy; OpenStreetMap contributors | Radar: NASA/ISRO NISAR via ASF',
 }).addTo(map);
