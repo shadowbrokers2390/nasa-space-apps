@@ -1,0 +1,133 @@
+<!doctype html>
+<!--
+  Project demo: 7 slides. NASA Space Apps Challenge 2026, "Dancing with the SARs".
+  AI acknowledgment: this deck's code and draft text were written with Claude (Anthropic), an AI assistant.
+  Slides 3 and 5 embed the live project itself, so nothing here is an AI-generated image.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Seven-slide demo for Ground Movement Near Infrastructure, a NISAR project for NASA Space Apps 2026. Written with AI assistance (Claude, Anthropic).">
+<title>Ground Movement Near Infrastructure: project demo</title>
+<style>
+  html { scroll-snap-type: y mandatory; scroll-behavior: smooth; }
+  body { margin: 0; font: 20px/1.45 system-ui, sans-serif; color: #1b1b1b; background: #f6f4ef; }
+  section { min-height: 100vh; box-sizing: border-box; padding: 5vh 6vw 9vh; scroll-snap-align: start;
+            display: flex; flex-direction: column; justify-content: center; position: relative; }
+  h1 { font-size: clamp(34px, 5.2vw, 64px); line-height: 1.08; margin: 0 0 .35em; }
+  h2 { font-size: clamp(26px, 3.4vw, 42px); line-height: 1.15; margin: 0 0 .5em; }
+  p, li { max-width: 62ch; }
+  ul { padding-left: 1.1em; margin: .3em 0; }
+  li { margin: .35em 0; }
+  .tag { color: #b2182b; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; font-size: 15px; margin: 0 0 1em; }
+  .lead { font-size: clamp(20px, 2.2vw, 28px); }
+  .cols { display: grid; grid-template-columns: repeat(auto-fit, minmax(210px, 1fr)); gap: 18px; margin: .6em 0; }
+  .num { background: #fff; border: 1px solid #d8d3c8; border-radius: 8px; padding: 14px 16px; }
+  .num b { display: block; font-size: clamp(28px, 3.4vw, 44px); line-height: 1.1; color: #b2182b; }
+  iframe { width: 100%; height: 58vh; border: 1px solid #b9b3a6; border-radius: 8px; background: #fff; }
+  .foot { position: absolute; left: 6vw; right: 6vw; bottom: 3vh; display: flex; justify-content: space-between;
+          font-size: 14px; color: #555; }
+  .small { font-size: 16px; color: #444; }
+  a { color: #1a5ea8; }
+  @media (max-width: 700px) { body { font-size: 17px; } iframe { height: 52vh; } }
+</style>
+</head>
+<body>
+
+<section>
+  <p class="tag">NASA Space Apps Challenge 2026 · Dancing with the SARs</p>
+  <h1>Ground Movement Near Infrastructure</h1>
+  <p class="lead">Where is the ground moving under the things we built, and by how much?
+     NASA-ISRO NISAR radar can show us.</p>
+  <p>Solo team<br>Team member: <b>messi the goat</b></p>
+  <div class="foot"><span>Use the arrow keys or scroll</span><span>1 / 7</span></div>
+</section>
+
+<section>
+  <p class="tag">The problem</p>
+  <h2>Ground that moves a few centimeters a month breaks things slowly</h2>
+  <ul class="lead">
+    <li>Roads, pipes, foundations, and rail lines all assume the ground stays put.</li>
+    <li>Slow movement is invisible until pavement cracks or a pipe snaps.</li>
+    <li>Engineers cannot put sensors on every hillside and every city block.</li>
+  </ul>
+  <p class="lead"><b>They need to know where to look first.</b></p>
+  <div class="foot"><span>Ground Movement Near Infrastructure</span><span>2 / 7</span></div>
+</section>
+
+<section>
+  <p class="tag">The project · live, try it</p>
+  <h2>An interactive map of ground movement, and what sits on it</h2>
+  <iframe src="./?site=pv" loading="lazy" title="Live project: Portuguese Bend, California"></iframe>
+  <p class="small">Pick a place, press Play to step through the dates, click anywhere for a measurement in
+     centimeters, and switch between two satellite viewing directions.</p>
+  <div class="foot"><span>Ground Movement Near Infrastructure</span><span>3 / 7</span></div>
+</section>
+
+<section>
+  <p class="tag">Result 1 · Landslide</p>
+  <h2>Portuguese Bend, California</h2>
+  <div class="cols">
+    <div class="num"><b>25 of 25</b>date pairs in which the slide area moved away from the satellite</div>
+    <div class="num"><b>at least 57 cm</b>along the radar's line of sight, Nov 2025 to Oct 2026</div>
+    <div class="num"><b>about 2 km²</b>of moving ground</div>
+    <div class="num"><b>222</b>mapped buildings on it, plus Palos Verdes Drive South</div>
+  </div>
+  <p>A patch that shows up in the same place 25 times in a row is ground movement, not noise.</p>
+  <div class="foot"><span>Ground Movement Near Infrastructure</span><span>4 / 7</span></div>
+</section>
+
+<section>
+  <p class="tag">Result 2 · Sinking ground</p>
+  <h2>Mexico City: about 73 km² sank about 16 cm in a year</h2>
+  <iframe src="./?site=mexico" loading="lazy" title="Live project: Mexico City"></iframe>
+  <p class="small">Two satellite viewing directions give about 16 cm and 15 cm. Sinking is straight down, so
+     the two views should agree, and they do. Metro lines, major roads, and runways cross the area.</p>
+  <div class="foot"><span>Ground Movement Near Infrastructure</span><span>5 / 7</span></div>
+</section>
+
+<section>
+  <p class="tag">Honest by design</p>
+  <h2>A map people act on has to state its limits</h2>
+  <ul>
+    <li>The NISAR data is <b>Provisional</b>, and the app says so on every view.</li>
+    <li>Radar measures motion only toward or away from the satellite, so every number is "at least".</li>
+    <li>"On the moving area" does not mean "damaged", and the data does not prove a cause.</li>
+    <li>A third site, California's Central Valley, showed no consistent signal. It was left out, not dressed up.</li>
+  </ul>
+  <p><b>The satellite shows where to look. Ground sensors confirm it:</b> GNSS and survey points,
+     borehole inclinometers, crack gauges, piezometers, and tiltmeters. The app lists what an engineer
+     would check at each place.</p>
+  <div class="foot"><span>Ground Movement Near Infrastructure</span><span>6 / 7</span></div>
+</section>
+
+<section>
+  <p class="tag">How it was built</p>
+  <h2>Open NASA and partner data made this possible</h2>
+  <ul>
+    <li><b>NASA-ISRO NISAR</b> L-band radar, L2 GUNW interferograms, 103 date pairs, from the Alaska Satellite
+        Facility through NASA Earthdata. ISRO is a Space Apps Space Agency Partner.</li>
+    <li><b>Processing:</b> Python in Google Colab, reading only each site's pixels over the internet.</li>
+    <li><b>Map:</b> a static web page with Leaflet, OpenStreetMap infrastructure, and an Esri base map.</li>
+    <li><b>AI use:</b> the code and draft text were written with Claude (Anthropic), an AI assistant, and are
+        labeled in every file. The measurements come from NISAR, not from an AI model.</li>
+  </ul>
+  <p>Live map: <a href="./">shadowbrokers2390.github.io/nasa-space-apps</a><br>
+     Code: <a href="https://github.com/shadowbrokers2390/nasa-space-apps">github.com/shadowbrokers2390/nasa-space-apps</a></p>
+  <div class="foot"><span>Ground Movement Near Infrastructure</span><span>7 / 7</span></div>
+</section>
+
+<script>
+// Arrow keys, Page Up/Down and Space move one slide at a time.
+const slides = [...document.querySelectorAll('section')];
+addEventListener('keydown', e => {
+  const step = ['ArrowRight', 'ArrowDown', 'PageDown', ' '].includes(e.key) ? 1 : ['ArrowLeft', 'ArrowUp', 'PageUp'].includes(e.key) ? -1 : 0;
+  if (!step) return;
+  e.preventDefault();
+  const here = Math.round(scrollY / innerHeight);
+  slides[Math.max(0, Math.min(slides.length - 1, here + step))].scrollIntoView();
+});
+</script>
+</body>
+</html>
