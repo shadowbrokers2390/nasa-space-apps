@@ -26,9 +26,9 @@
   .num { background: #fff; border: 1px solid #d8d3c8; border-radius: 8px; padding: 14px 16px; }
   .num b { display: block; font-size: clamp(28px, 3.4vw, 44px); line-height: 1.1; color: #b2182b; }
   iframe { width: 100%; border: 1px solid #b9b3a6; border-radius: 8px; background: #fff; }
-  /* Slides with the live map are exactly one screen tall; the map takes whatever height the text leaves. */
-  section.live { height: 100vh; }
-  section.live iframe { flex: 1; min-height: 0; }
+  /* Slides with the live map: the map takes the height the text leaves, but never less than 340px,
+     so on a small window the slide grows instead of the map disappearing. */
+  section.live iframe { flex: 1; min-height: 340px; }
   .foot { position: absolute; left: 6vw; right: 6vw; bottom: 3vh; display: flex; justify-content: space-between;
           font-size: 14px; color: #555; }
   .small { font-size: 16px; color: #444; }
@@ -62,7 +62,7 @@
 <section class="live">
   <p class="tag">The project · live, try it</p>
   <h2>An interactive map of ground movement, and what sits on it</h2>
-  <iframe src="./?site=pv" loading="lazy" title="Live project: Portuguese Bend, California"></iframe>
+  <iframe src="https://shadowbrokers2390.github.io/nasa-space-apps/?site=pv" title="Live project: Portuguese Bend, California"></iframe>
   <p class="small">Pick a place, press Play to step through the dates, click anywhere for a measurement in
      centimeters, and switch between two satellite viewing directions.</p>
   <div class="foot"><span>Ground Movement Near Infrastructure</span><span>3 / 7</span></div>
@@ -84,7 +84,7 @@
 <section class="live">
   <p class="tag">Result 2 · Sinking ground</p>
   <h2>Mexico City: about 73 km² sank about 16 cm in a year</h2>
-  <iframe src="./?site=mexico" loading="lazy" title="Live project: Mexico City"></iframe>
+  <iframe src="https://shadowbrokers2390.github.io/nasa-space-apps/?site=mexico" title="Live project: Mexico City"></iframe>
   <p class="small">Two satellite viewing directions give about 16 cm and 15 cm. Sinking is straight down, so
      the two views should agree, and they do. Metro lines, major roads, and runways cross the area.</p>
   <div class="foot"><span>Ground Movement Near Infrastructure</span><span>5 / 7</span></div>
