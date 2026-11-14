@@ -1,0 +1,293 @@
+<!doctype html>
+<!--
+  Ground Movement Near Infrastructure: Portuguese Bend
+  NASA Space Apps Challenge 2026, "Dancing with the SARs". Built during the event, Nov 14-15, 2026.
+  AI acknowledgment: this page's code was written with Claude (Anthropic), an AI assistant.
+  The displacement values come from NASA-ISRO NISAR data, not from an AI model.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Interactive map of ground movement at the Portuguese Bend landslide from NISAR radar. Code written with AI assistance (Claude, Anthropic).">
+<meta name="generator" content="Hand-directed, AI-assisted code (Claude, Anthropic)">
+<title>Ground movement near infrastructure: Portuguese Bend (NISAR)</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<style>
+  body { margin: 0; font: 15px/1.45 system-ui, sans-serif; color: #222; display: flex; height: 100vh; }
+  #map { flex: 1; }
+  #panel { width: 380px; overflow: auto; padding: 14px 16px; box-sizing: border-box; border-left: 1px solid #ccc; }
+  @media (max-width: 760px) {
+    body { flex-direction: column; height: auto; }
+    #map { flex: none; height: 60vh; }
+    #panel { width: auto; border-left: 0; }
+  }
+  h1 { font-size: 19px; margin: 0 0 6px; }
+  h2 { font-size: 15px; margin: 18px 0 4px; }
+  ul { margin: 4px 0; padding-left: 20px; }
+  label { display: block; margin-top: 8px; }
+  select, input[type=range] { width: 100%; }
+  button { font: inherit; padding: 4px 12px; margin-top: 6px; cursor: pointer; }
+  .warn { background: #fff3cd; border: 1px solid #d9b100; padding: 6px 8px; border-radius: 4px; }
+  .small { font-size: 12px; color: #555; }
+  #bar { height: 14px; border: 1px solid #555; background: linear-gradient(to right,
+    #67001f, #b2182b, #d6604d, #f4a582, #fddbc7, #f7f7f7, #d1e5f0, #92c5de, #4393c3, #2166ac, #053061); }
+  #ticks { display: flex; justify-content: space-between; font-size: 12px; }
+  #chart { width: 100%; border: 1px solid #ccc; background: #fff; }
+  #chart circle { cursor: pointer; }
+  .px { image-rendering: pixelated; }
+</style>
+</head>
+<body>
+<div id="map" role="application" aria-label="Map of ground movement"></div>
+<div id="panel">
+  <h1 id="title">Ground movement near infrastructure</h1>
+  <label for="site">Place</label>
+  <select id="site"></select>
+  <p class="warn" id="status">Loading…</p>
+
+  <label for="track">Satellite viewing direction</label>
+  <select id="track"></select>
+  <label for="date">Date pair: <b id="dateLabel"></b></label>
+  <input id="date" type="range" min="0" step="1">
+  <button id="play" type="button">▶ Play through the dates</button>
+  <label><input id="total" type="checkbox"> Show the total of all date pairs instead of one pair</label>
+
+  <h2>Displacement along the radar's line of sight</h2>
+  <div id="bar" role="img" aria-label="Color scale from red (away from satellite) to blue (toward satellite)"></div>
+  <div id="ticks"><span id="lo"></span><span>0 cm</span><span id="hi"></span></div>
+  <p>Red = ground moved <b>away</b> from the satellite. Blue = toward it. Clear = no reliable data
+     (water or low quality). Click the map to read a value.</p>
+  <label for="op">Overlay opacity</label>
+  <input id="op" type="range" min="0" max="100" value="75">
+  <label><input id="showNear" type="checkbox" checked> Show the <span class="area"></span> outline and what is built on it</label>
+
+  <h2>The <span class="area"></span> in this date pair</h2>
+  <p id="patch"></p>
+
+  <h2>The <span class="area"></span> over time</h2>
+  <svg id="chart" viewBox="0 0 340 180" role="img" aria-labelledby="chartNote"></svg>
+  <p id="chartNote"></p>
+
+  <h2>What is built on the <span class="area"></span></h2>
+  <p id="near">Loading…</p>
+
+  <h2>About this data</h2>
+  <ul id="about"></ul>
+
+  <h2>Limits: read before trusting a number</h2>
+  <ul>
+    <li><b>One direction only.</b> The radar measures motion toward or away from itself, not the full 3D movement, which is larger. The two viewing directions give different numbers for the same motion because each sees a different slice of it.</li>
+    <li><b>Relative, not absolute.</b> Each date pair is measured against the typical pixel in this map area.</li>
+    <li><b>Background noise.</b> <span id="noise"></span> Anything inside that range should not be read as motion.</li>
+    <li><b>The amount may be underestimated.</b> Where the ground moves a lot between neighboring pixels, the processing can lose whole steps of <span id="half"></span> cm. Treat the values as "at least".</li>
+    <li><b>Totals add up errors.</b> The chart and the total map add date pairs end to end, so each pair's noise adds in too. On the total map a cell needs data in at least 80% of the pairs, and its missing pairs count as zero.</li>
+    <li><b>Not everything colored is ground motion.</b> Broad pale bands that follow the hills are probably weather effects in the air.</li>
+    <li><b>No cause is proven.</b> <span id="cause"></span></li>
+    <li><b>Coarse pixels.</b> Each pixel is about <span id="pix"></span> m, so this shows areas, not individual houses.</li>
+  </ul>
+
+  <h2>What an engineer would check on the ground</h2>
+  <p>The satellite shows <b>where</b> to look. Ground instruments show how deep, how fast, and in which direction.</p>
+  <ul id="engineer"></ul>
+
+  <p class="small">NASA Space Apps Challenge 2026, "Dancing with the SARs". Radar data: NASA-ISRO NISAR via the
+    Alaska Satellite Facility. The code for this page and its data processing was written with AI assistance
+    (Claude, Anthropic). The measurements come from the NISAR data, not from an AI model.</p>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Which place to show comes from the address (for example ?site=mexico). Only names in this list are accepted.
+const SITES = {
+  pv: 'Portuguese Bend, California: landslide',
+  mexico: 'Mexico City: sinking ground',
+};
+const asked = new URLSearchParams(location.search).get('site'), SITE = Object.hasOwn(SITES, asked) ? asked : 'pv';
+document.write(`<script src="ts-${SITE}.js"><\/script><script src="near-${SITE}.js"><\/script>`);
+</script>
+<script>
+const $ = id => document.getElementById(id);
+for (const [id, label] of Object.entries(SITES)) $('site').add(new Option(label, id, false, id === SITE));
+$('site').onchange = e => { location.search = '?site=' + e.target.value; };
+if (typeof TS === 'undefined' || typeof L === 'undefined') {
+  $('status').textContent = typeof L === 'undefined'
+    ? 'Map library did not load. Check the internet connection and reload.'
+    : `Data file ts-${SITE}.js not found. Put the ts- and near- files in the same folder as this page.`;
+  throw new Error('missing dependency');
+}
+const M = TS.meta, [[S, W], [N, E]] = TS.bounds, STEP = TS.step_deg, nc = TS.ncols, total = TS.nrows * nc;
+if (TS.tracks.some(t => t.pairs.some(p => p.mm.length !== total))) {
+  $('status').textContent = 'The data file does not match its own grid size. Re-export it from Colab.';
+  throw new Error('bad grid');
+}
+const mask = new Set(TS.mask), fmt = d => `${d.slice(0, 4)}-${d.slice(4, 6)}-${d.slice(6)}`;
+const signed = v => (v > 0 ? '+' : '') + v;
+let track = TS.tracks[0], pair = null;
+
+// What the map shows: one date pair, or the total of all pairs, each with its own color scale.
+const view = () => $('total').checked
+  ? { mm: track.total_mm, scale: M.total_scale_cm,
+      label: `the total of ${track.pairs.length} date pairs, ${fmt(track.pairs[0].d1)} to ${fmt(track.pairs[track.pairs.length - 1].d2)}` }
+  : { mm: pair.mm, scale: M.color_scale_cm, label: `${fmt(pair.d1)} to ${fmt(pair.d2)}` };
+$('half').textContent = (M.wavelength_m * 50).toFixed(1);
+// Everything that differs between places comes from that place's data file.
+document.title = $('title').textContent = 'Ground movement near infrastructure: ' + M.place;
+document.querySelectorAll('.area').forEach(e => { e.textContent = M.area_name; });
+$('cause').textContent = M.cause_note;
+$('pix').textContent = M.pixel_m;
+for (const line of M.engineer) $('engineer').appendChild(document.createElement('li')).textContent = line;
+
+const map = L.map('map').fitBounds(TS.bounds);
+// The map can measure itself before the page layout settles, which leaves it zoomed out and off-center.
+addEventListener('load', () => { map.invalidateSize(); map.fitBounds(TS.bounds); });
+L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+  maxZoom: 19, attribution: 'Base map: Esri | Buildings and roads: &copy; OpenStreetMap contributors | Radar: NASA/ISRO NISAR via ASF',
+}).addTo(map);
+
+// The overlay is painted in the browser from the numbers, so it always matches the selected date pair.
+const RAMP = ['67001f', 'b2182b', 'd6604d', 'f4a582', 'fddbc7', 'f7f7f7', 'd1e5f0', '92c5de', '4393c3', '2166ac', '053061']
+  .map(h => [0, 2, 4].map(i => parseInt(h.slice(i, i + 2), 16)));
+const canvas = Object.assign(document.createElement('canvas'), { width: nc, height: TS.nrows }), ctx = canvas.getContext('2d');
+const overlay = L.imageOverlay(canvas.toDataURL(), TS.bounds, {
+  opacity: 0.75, className: 'px', alt: 'Line-of-sight displacement overlay',
+}).addTo(map);
+$('op').oninput = e => overlay.setOpacity(e.target.value / 100);
+function draw() {
+  const { mm, scale } = view(), img = ctx.createImageData(nc, TS.nrows), V = scale * 10;
+  $('lo').textContent = `-${scale} cm (away)`;
+  $('hi').textContent = `+${scale} cm (toward)`;
+  mm.forEach((v, s) => {
+    if (v == null) return;
+    const t = (Math.max(-V, Math.min(V, v)) + V) / (2 * V) * (RAMP.length - 1), k = Math.min(Math.floor(t), RAMP.length - 2);
+    for (let ch = 0; ch < 3; ch++) img.data[s * 4 + ch] = RAMP[k][ch] + (RAMP[k + 1][ch] - RAMP[k][ch]) * (t - k);
+    img.data[s * 4 + 3] = 255;
+  });
+  ctx.putImageData(img, 0, 0);
+  overlay.setUrl(canvas.toDataURL());
+}
+
+const cell = (lat, lon) => {
+  const r = Math.floor((N - lat) / STEP), c = Math.floor((lon - W) / STEP);
+  return r >= 0 && r < TS.nrows && c >= 0 && c < nc ? r * nc + c : -1;
+};
+map.on('click', e => {
+  const s = cell(e.latlng.lat, e.latlng.lng), v = s < 0 ? null : view().mm[s];
+  L.popup().setLatLng(e.latlng).setContent(v == null
+    ? 'No reliable data here (water or low quality).'
+    : `<b>${signed(v / 10)} cm</b> along line of sight (${v < 0 ? 'away from' : 'toward'} satellite)` +
+      `<br>For ${view().label}${mask.has(s) ? '<br>Inside the ' + M.area_name : ''}<br>${M.status} data`
+  ).openOn(map);
+});
+
+// Slide area outline: draw every cell edge that has the slide on one side only.
+const near = L.layerGroup().addTo(map), edges = [];
+for (const s of mask) {
+  const r = Math.floor(s / nc), c = s % nc, n = N - r * STEP, w = W + c * STEP, so = n - STEP, e = w + STEP;
+  if (!mask.has(s - nc)) edges.push([[n, w], [n, e]]);
+  if (!mask.has(s + nc)) edges.push([[so, w], [so, e]]);
+  if (c === 0 || !mask.has(s - 1)) edges.push([[n, w], [so, w]]);
+  if (c === nc - 1 || !mask.has(s + 1)) edges.push([[n, e], [so, e]]);
+}
+L.polyline(edges, { color: '#111', weight: 2, dashArray: '4 3' }).addTo(near);
+$('showNear').onchange = ev => ev.target.checked ? near.addTo(map) : near.remove();
+
+if (typeof NEAR === 'undefined') {
+  $('near').textContent = 'No infrastructure file for this place, so nothing is outlined.';
+} else {
+  let buildings = 0; const roads = new Set();
+  for (const el of NEAR.elements) {
+    const pts = el.geometry.map(g => [g.lat, g.lon]);
+    if (!pts.some(([lat, lon]) => mask.has(cell(lat, lon)))) continue;
+    if (el.tags.building) { buildings++; L.polygon(pts, { color: '#111', weight: 1.5, fillOpacity: 0.15 }).addTo(near); }
+    else { L.polyline(pts, { color: '#111', weight: 3 }).addTo(near); if (el.tags.name) roads.add(el.tags.name); }
+  }
+  const area = mask.size * (STEP * 111.32) ** 2 * Math.cos((S + N) / 2 * Math.PI / 180);
+  $('near').textContent = `The dashed outline (about ${area.toFixed(1)} km²) is ${M.mask_rule}. ` +
+    (buildings ? `${buildings} mapped buildings touch it (black outlines). ` : '') +
+    `${M.near_label} crossing it (black lines): ${[...roads].slice(0, 15).join(', ') || 'none named'}` +
+    `${roads.size > 15 ? `, and ${roads.size - 15} more` : ''}. ` +
+    `This means the ground under them moved; it does not mean they are damaged. ` +
+    `Source: OpenStreetMap, which may be incomplete or out of date.`;
+}
+
+// A pair counts toward the running total only if most of the slide area had reliable data.
+const usable = p => p.mask_good_pct >= 50;
+function chart() {
+  const P = track.pairs, day = d => Date.UTC(+d.slice(0, 4), d.slice(4, 6) - 1, +d.slice(6)) / 864e5;
+  let sum = 0, used = 0, gaps = 0;
+  const pts = P.map((p, i) => {
+    if (i && p.d1 !== P[i - 1].d2) gaps++;
+    if (usable(p)) { sum += p.med_cm; used++; }
+    return { x: day(p.d2), y: sum, i, ok: usable(p) };
+  });
+  const x0 = day(P[0].d1), x1 = pts[pts.length - 1].x, ys = pts.map(p => p.y).concat(0);
+  const lo = Math.min(...ys), hi = Math.max(...ys), span = (hi - lo) || 1;
+  const X = x => 44 + (x - x0) / (x1 - x0 || 1) * 284, Y = y => 14 + (hi - y) / span * 130;
+  const line = [[x0, 0], ...pts.map(p => [p.x, p.y])].map(([x, y]) => `${X(x).toFixed(1)},${Y(y).toFixed(1)}`).join(' ');
+  $('chart').innerHTML =
+    `<line x1="44" y1="${Y(0)}" x2="328" y2="${Y(0)}" stroke="#999"/>` +
+    `<text x="40" y="${Y(hi) + 4}" font-size="11" text-anchor="end">${hi.toFixed(1)}</text>` +
+    `<text x="40" y="${Y(lo) + 4}" font-size="11" text-anchor="end">${lo.toFixed(1)}</text>` +
+    `<text x="12" y="84" font-size="11" text-anchor="middle" transform="rotate(-90 12 84)">total cm</text>` +
+    `<text x="44" y="172" font-size="11">${fmt(P[0].d1)}</text>` +
+    `<text x="328" y="172" font-size="11" text-anchor="end">${fmt(P[P.length - 1].d2)}</text>` +
+    `<polyline points="${line}" fill="none" stroke="#b2182b" stroke-width="2"/>` +
+    pts.map(p => `<circle cx="${X(p.x).toFixed(1)}" cy="${Y(p.y).toFixed(1)}" r="${P[p.i] === pair ? 6 : 4}" data-i="${p.i}" ` +
+      `fill="${p.ok ? '#b2182b' : '#fff'}" stroke="${P[p.i] === pair ? '#000' : '#b2182b'}" stroke-width="2">` +
+      `<title>${fmt(P[p.i].d1)} to ${fmt(P[p.i].d2)}: ${signed(P[p.i].med_cm)} cm${p.ok ? '' : ' (not counted: too little reliable data)'}</title></circle>`).join('');
+  $('chartNote').textContent = `Running total of the ${M.area_name}'s median movement, ${fmt(P[0].d1)} to ${fmt(P[P.length - 1].d2)}: ` +
+    `${signed(+sum.toFixed(1))} cm along the line of sight, from ${used} of ${P.length} date pairs` +
+    `${used < P.length ? ' (hollow dots had too little reliable data and are not counted, so the total is incomplete)' : ''}` +
+    `${gaps ? `; ${gaps} gap(s) between pairs are not covered` : ''}. Click a dot to show that pair on the map.`;
+}
+$('chart').onclick = e => { if (e.target.dataset.i) { stop(); show(+e.target.dataset.i); } };
+
+function show(i) {
+  pair = track.pairs[i];
+  $('date').value = i;
+  $('dateLabel').textContent = `${fmt(pair.d1)} to ${fmt(pair.d2)} (${pair.days} days)`;
+  $('status').textContent = `${M.status} data. The map shows ${view().label}, ${track.pass.toLowerCase()} pass.`;
+  $('patch').textContent = pair.mask_good_pct
+    ? `Median movement inside the dashed outline: ${signed(pair.med_cm)} cm along the line of sight in ${pair.days} days ` +
+      `(at least). ${pair.mask_good_pct}% of the outline had reliable data in this pair.`
+    : 'No reliable data inside the dashed outline in this pair.';
+  $('noise').textContent = `In this date pair, land outside the ${M.area_name} ranges from ${pair.noise_cm[0]} to ${signed(pair.noise_cm[1])} cm.`;
+  draw(); chart();
+}
+
+// Play button: step through the date pairs, wrapping back to the first.
+let timer = null;
+function stop() { clearInterval(timer); timer = null; $('play').textContent = '▶ Play through the dates'; }
+$('play').onclick = () => {
+  if (timer) return stop();
+  $('total').checked = false;   // playing steps through single pairs
+  $('play').textContent = '⏸ Pause';
+  timer = setInterval(() => show((track.pairs.indexOf(pair) + 1) % track.pairs.length), 700);
+};
+
+function setTrack(t) {
+  stop();
+  track = t;
+  $('date').max = t.pairs.length - 1;
+  $('about').textContent = '';
+  for (const line of [
+    `Source: NASA-ISRO NISAR, L-band radar, wavelength ${(M.wavelength_m * 100).toFixed(1)} cm.`,
+    `Product: ${M.product}. Status: ${M.status}.`,
+    `This view: track ${t.track}, frame ${t.frame}, ${t.pairs.length} date pairs from ${fmt(t.pairs[0].d1)} to ${fmt(t.pairs[t.pairs.length - 1].d2)}.`,
+    `Viewing direction: ${t.pass} pass, ${t.look}-looking, so the satellite views this site from the ${t.from}, looking ${t.toward}. Polarization HH.`,
+    `Sign: ${M.sign}. Reference: ${M.reference}.`,
+    `Quality filter: pixels with coherence below ${M.coherence_min}, or where phase unwrapping failed, are hidden.`,
+    `Pixel size: about ${M.pixel_m} m.`,
+  ]) $('about').appendChild(document.createElement('li')).textContent = line;
+  show(t.pairs.length - 1);
+}
+TS.tracks.forEach((t, i) => $('track').add(new Option(`${t.pass}: views from the ${t.from}`, i)));
+$('track').onchange = e => setTrack(TS.tracks[e.target.value]);
+$('date').oninput = e => { stop(); show(+e.target.value); };
+$('total').checked = M.default_total;
+$('total').onchange = () => { stop(); show(track.pairs.indexOf(pair)); };
+setTrack(track);
+</script>
+</body>
+</html>
